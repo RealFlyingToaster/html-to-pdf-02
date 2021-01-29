@@ -23,6 +23,7 @@ exports.pdf = async (url, context) => {
         });
         console.log('pdf: a: ' + navHost);
         page = await browser.newPage();
+        page.setViewport({ width: 900, height: 900, deviceScaleFactor: 2 });
         console.log('pdf: a1');
         if (context && context.headers) {
             await page.setRequestInterception(true);
@@ -40,7 +41,8 @@ exports.pdf = async (url, context) => {
                     request.headers(),
                     context.headers
                 );
-                console.log('...headers: ' + JSON.stringify(headers));
+                console.log('...headers applied');
+                //console.log('...headers: ' + JSON.stringify(headers));
                 request.continue({ headers });
             });
             // console logging.
@@ -53,21 +55,21 @@ exports.pdf = async (url, context) => {
                 .on('requestfailed', request =>
                     console.log(`${request.failure().errorText} ${request.url()}`));
         }
-        //page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
         await page.goto(url, { waitUntil: ['load', 'domcontentloaded', 'networkidle0'] });
         console.log('pdf: a2');
         // make sure all fonts have loaded
         await page.evaluateHandle('document.fonts.ready');
+        console.log('pdf: a3');
         const pdf = await page.pdf({
             fullPage: true,
-            format: 'letter',
+            format: 'Letter',
             margin: {
                 top: '.5in',
                 bottom: '.5in',
                 right: '.5in',
                 left: '.5in'
             },
-            scale: 0.75,
+            scale: 0.80, // .68 = 7.5" * 96dpi / 1056px natural width
             printBackground: true
         });
         console.log('pdf: b');
@@ -86,7 +88,7 @@ exports.pdf = async (url, context) => {
         console.error(ex);
         except = ex;
     } finally {
-        console.log('cleanup');
+        //console.log('cleanup');
         memcheck.summary();
         // clean up puppeteer world no matter what
         if (page) {
