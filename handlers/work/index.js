@@ -3,7 +3,7 @@ const renderer = require('lib/pdf-render.js');
 let response;
 
 // establish local font library
-//process.env.FONTCONFIG_PATH='/var/task/fonts';
+process.env.FONTCONFIG_PATH='/var/task/fonts';
 
 /**
  *

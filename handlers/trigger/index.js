@@ -40,10 +40,10 @@ exports.lambdaHandler = async (event, context) => {
                 response = {
                     'statusCode': 200,
                     'body': JSON.stringify({
-                        event: event,
-                        job: jobToken,
-                        sqsQueue: sqsQueueUrl,
-                        messageId: data.messageId
+                        // event: event,
+                        job: jobToken
+                        // sqsQueue: sqsQueueUrl,
+                        // messageId: data.messageId
                     })
                 };
             }).catch((err) => {
