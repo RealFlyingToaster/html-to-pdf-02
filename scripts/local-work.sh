@@ -1,0 +1,1 @@
+SCRATCH_BUCKET=html-to-pdf-01-scratchbucket-tj0mqr7hkpcl bash -c 'sam local invoke WorkFunction --event ./events/event-work.json'

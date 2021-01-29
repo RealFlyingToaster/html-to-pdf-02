@@ -8,6 +8,7 @@ Description: >
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
+    Runtime: nodejs12.x
     Environment:
       Variables:
         SQS_QUEUE: !Ref SQSQueue
@@ -18,7 +19,6 @@ Resources:
   TriggerFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
-      Runtime: nodejs12.x
       CodeUri: handlers/trigger/
       Handler: index.lambdaHandler
       Timeout: 10
@@ -35,6 +35,7 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: handlers/work/
+      Handler: index.lambdaHandler
       Timeout: 30
       MemorySize: 1024
       Policies:

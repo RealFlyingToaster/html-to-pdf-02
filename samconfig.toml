@@ -1,0 +1,9 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "html-to-pdf-02"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-19ozeeqi9133b"
+s3_prefix = "html-to-pdf-02"
+region = "us-west-1"
+capabilities = "CAPABILITY_IAM"

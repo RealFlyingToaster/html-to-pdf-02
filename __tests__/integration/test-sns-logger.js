@@ -135,7 +135,7 @@ describe("Test SNS Logger", function () {
         .promise();
 
       const matchEvents = response.events.find(
-        (event) => event.message && event.message.includes(integTestId)
+        (event) => event.message && event.message.includes && event.message.includes(integTestId)
       );
 
       if (matchEvents) {
