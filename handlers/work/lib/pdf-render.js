@@ -13,33 +13,33 @@ exports.pdf = async (url, context) => {
     try {
         // one browser per request.
         console.log('pdf: 0');
-        let navHost = new URL(url).host;
-        //    memcheck.summary();
         browser = await chromium.puppeteer.launch({
             executablePath: await chromium.executablePath,
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
             headless: chromium.args
         });
-        console.log('pdf: a: ' + navHost);
+        console.log('pdf: a');
         page = await browser.newPage();
         page.setViewport({ width: 900, height: 900, deviceScaleFactor: 2 });
         console.log('pdf: a1');
-        if (context && context.headers) {
+        if (context && context.headers && context.headers.hosts) {
             await page.setRequestInterception(true);
 
             page.on('request', (request) => {
                 console.log('Request: ' + request.url());
-                let reqHost = new URL(request.url()).host;
+                let reqHost = new URL(request.url()).host,
+                    hostHeaders = context.headers.hosts[reqHost];
                 // override request headers
-                // Do nothing in case of non-navigation requests.
-                if (reqHost !== navHost) {
+                // Do nothing if no headers specified for this host.
+
+                if (!hostHeaders) {
                     request.continue();
                     return;
                 }
                 const headers = Object.assign({},
                     request.headers(),
-                    context.headers
+                    hostHeaders
                 );
                 console.log('...headers applied');
                 //console.log('...headers: ' + JSON.stringify(headers));

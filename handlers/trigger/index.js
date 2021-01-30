@@ -41,7 +41,8 @@ exports.lambdaHandler = async (event, context) => {
                     'statusCode': 200,
                     'body': JSON.stringify({
                         // event: event,
-                        job: jobToken
+                        job: jobToken,
+                        defaultBucket: process.env.SCRATCH_BUCKET
                         // sqsQueue: sqsQueueUrl,
                         // messageId: data.messageId
                     })
