@@ -1,10 +1,36 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  html-to-pdf-01
+  html-to-pdf-02
 
   Sample SAM Template for html-to-pdf-02
   
+Parameters:
+  DomainName: 
+    Type: String
+    Description: Domain name for API
+  ZoneId:
+    Type: String
+    Description: Route53 ZoneId for custom domain
+    Default: none
+  CertArn:
+    Type: String
+    Description: Certificate ARN for custom domain. MUST be provisioned on same zone for a regional API.
+    Default: none
+  Stage:
+    Type: String
+    Description: Deployment stage
+    AllowedValues:
+      - Dev
+      - Staging
+      - Prod
+
+Conditions:
+  CreateZone:
+    !Equals [!Ref ZoneId, 'none']
+  CreateCert:
+    !Equals [!Ref CertArn, 'none']
+
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
@@ -16,6 +42,29 @@ Globals:
         SCRATCH_BUCKET: !Ref ScratchBucket
 
 Resources:
+  GeneratedZone: # If a Zone ID is not passed in the parameteres, then a new zone is created for the domain
+    Type: AWS::Route53::HostedZone
+    Condition: CreateZone
+    Properties: 
+      Name: !Ref DomainName
+
+  GeneratedCert: # If a Certificate ARN is not passed in the parameters, then a new cert is created and will required validation during the deploy
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateCert
+    Properties: 
+      DomainName: !Ref DomainName
+      ValidationMethod: DNS
+
+  RestApiGateway:
+    Type: AWS::Serverless::Api
+    Properties: 
+      StageName: !Ref Stage
+      Domain:
+        DomainName: !Ref DomainName
+        CertificateArn: !If [CreateCert, !Ref GeneratedCert, !Ref CertArn] 
+        Route53:
+          HostedZoneId: !If [CreateZone, !Ref GeneratedZone, !Ref ZoneId]
+
   TriggerFunction:
     Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
     Properties:
@@ -29,8 +78,10 @@ Resources:
         Trigger:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
           Properties:
-            Path: /html-to-pdf-02
+            RestApiId: !Ref RestApiGateway
+            Path: /
             Method: post
+
   WorkFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -47,8 +98,10 @@ Resources:
           Properties:
             Queue: !GetAtt SQSQueue.Arn
             BatchSize: 10
+
   SQSQueue:
     Type: AWS::SQS::Queue
+
   ScratchBucket:
     Type: AWS::S3::Bucket
 
@@ -58,7 +111,7 @@ Outputs:
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   TriggerApi:
     Description: "API Gateway endpoint URL for Prod stage for trigger function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/html-to-pdf-01/"
+    Value: !Sub "https://${RestApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
   TriggerFunction:
     Description: "Trigger Lambda Function ARN"
     Value: !GetAtt TriggerFunction.Arn

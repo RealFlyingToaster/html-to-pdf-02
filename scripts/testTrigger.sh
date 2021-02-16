@@ -1,1 +1,1 @@
-curl -X POST https://zzsaqq54y8.execute-api.us-west-1.amazonaws.com/Prod/html-to-pdf-02/ -d @/home/efw/projects/html-to-pdf-02/scripts/testPayload.json
+curl -X POST https://pdfshot.dev.db101.org -d @/home/efw/projects/html-to-pdf-02/scripts/testPayload.json
