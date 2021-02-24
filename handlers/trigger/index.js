@@ -17,7 +17,8 @@ let response,
 
 exports.lambdaHandler = async (event, context) => {
     try {
-        const sqsQueueUrl = process.env.SQS_QUEUE,
+        const sqsQueueUrl = process.env.SQS_QUEUE_IN,
+            s3Bucket = process.env.SCRATCH_BUCKET,
             jobToken = uuidv4();
 
         console.log('trigger: ' + JSON.stringify(event));
@@ -42,7 +43,8 @@ exports.lambdaHandler = async (event, context) => {
                     'body': JSON.stringify({
                         // event: event,
                         job: jobToken,
-                        defaultBucket: process.env.SCRATCH_BUCKET
+                        defaultBucket: s3Bucket,
+                        key: `jobs/${jobToken}/html.pdf`
                         // sqsQueue: sqsQueueUrl,
                         // messageId: data.messageId
                     })

@@ -24,6 +24,21 @@ Parameters:
       - Dev
       - Staging
       - Prod
+  Version:
+    Type: String
+    Description: Product version, for use in identifier creation
+    Default: '00'
+  BucketName:
+    Type: String
+    Description: Hard-coded bucket name, with reasonable default.
+
+# # This was for an aborted attempt to form the bucket name, which must be lowercase, dynamically. More trouble than it's worth.
+# Mappings:
+#   Environment:
+#     StageLower:
+#       Dev: dev
+#       Staging: staging
+#       Prod: prod
 
 Conditions:
   CreateZone:
@@ -37,9 +52,17 @@ Globals:
     Runtime: nodejs12.x
     Environment:
       Variables:
-        SQS_QUEUE: !Ref SQSQueue
+        SQS_QUEUE_IN: !Ref SQSQueueIn
+        SQS_QUEUE_OUT: !Ref SQSQueueOut
         REGION: !Ref AWS::Region
         SCRATCH_BUCKET: !Ref ScratchBucket
+  Api:
+    # enable CORS; to make more specific, change the origin wildcard
+    # to a particular domain name, e.g. "'www.example.com'"
+    Cors:
+      AllowMethods: "'*'"
+      AllowHeaders: "'*'"
+      AllowOrigin: "'*'"
 
 Resources:
   GeneratedZone: # If a Zone ID is not passed in the parameteres, then a new zone is created for the domain
@@ -73,7 +96,7 @@ Resources:
       Timeout: 10
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt SQSQueue.QueueName
+            QueueName: !GetAtt SQSQueueIn.QueueName
       Events:
         Trigger:
           Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
@@ -91,36 +114,75 @@ Resources:
       MemorySize: 1024
       Policies:
         - S3WritePolicy:
-            BucketName: !Ref ScratchBucket
+            BucketName: !Ref BucketName
       Events:
         SQSTriggerEvent:
           Type: SQS
           Properties:
-            Queue: !GetAtt SQSQueue.Arn
+            Queue: !GetAtt SQSQueueIn.Arn
             BatchSize: 10
 
-  SQSQueue:
+  SQSQueueIn:
     Type: AWS::SQS::Queue
+
+  SQSQueueOut:
+    Type: AWS::SQS::Queue
+
+  # Allow ScratchBucket to send messages to SQSQueueOut
+  SQSQueueOutPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: "*"
+            Action: SQS:SendMessage
+            Resource: "*"
+            Condition:
+              ArnLike:
+                aws:SourceArn: !Sub 'arn:aws:s3:*:*:${BucketName}'
+      Queues:
+        - !Ref SQSQueueOut
 
   ScratchBucket:
     Type: AWS::S3::Bucket
+    Properties: 
+      BucketName: !Ref BucketName
+      LifecycleConfiguration:
+        Rules:
+        - Id: DeleteObsoleteContent
+          Prefix: ''
+          Status: 'Enabled'
+          ExpirationInDays: '7'
+      NotificationConfiguration:
+        QueueConfigurations:
+          - Event: 's3:ObjectCreated:*'
+            Queue: !GetAtt SQSQueueOut.Arn       
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
   # Find out more about other implicit resources you can reference within SAM
   # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
   TriggerApi:
-    Description: "API Gateway endpoint URL for Prod stage for trigger function"
+    Description: "API Gateway endpoint URL for current stage for trigger function"
     Value: !Sub "https://${RestApiGateway}.execute-api.${AWS::Region}.amazonaws.com/${Stage}/"
+  TriggerDomain:
+    Description: "API Gateway domain as passed to compiler"
+    Value: !Sub "https://${DomainName}/"
   TriggerFunction:
     Description: "Trigger Lambda Function ARN"
     Value: !GetAtt TriggerFunction.Arn
   TriggerFunctionIamRole:
     Description: "Implicit IAM Role created for Trigger function"
     Value: !GetAtt TriggerFunctionRole.Arn
-  SQSQueue:
-    Description: "SQS Queue URL"
-    Value: !GetAtt SQSQueue.Arn
+  SQSQueueIn:
+    Description: "Trigger SQS Queue URL"
+    Value: !GetAtt SQSQueueIn.Arn
+  SQSQueueOut:
+    Description: "Response SQS Queue URL"
+    Value: !GetAtt SQSQueueOut.Arn
   ScratchBucket:
     Description: "S3 scratch bucket"
     Value: !Ref ScratchBucket
