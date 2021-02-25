@@ -43,10 +43,9 @@ exports.lambdaHandler = async (event, context) => {
                     'body': JSON.stringify({
                         // event: event,
                         job: jobToken,
-                        defaultBucket: s3Bucket,
-                        key: `jobs/${jobToken}/html.pdf`
-                        // sqsQueue: sqsQueueUrl,
-                        // messageId: data.messageId
+                        //defaultBucket: s3Bucket,
+                        key: `jobs/${jobToken}/html.pdf`,
+                        queue: process.env.SQS_QUEUE_OUT
                     })
                 };
             }).catch((err) => {

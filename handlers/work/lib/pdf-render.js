@@ -77,7 +77,10 @@ exports.pdf = async (url, context) => {
         const s3params = {
             Bucket: context.bucketName,
             Key: context.key,
-            Body: pdf
+            Body: pdf,
+            Metadata: {
+                jobId: context.jobId
+            }
         }
 
         await s3.putObject(s3params).promise();

@@ -38,6 +38,7 @@ exports.lambdaHandler = async (event, context) => {
                         bucketName: bucketName,
                         region: region,
                         key: `jobs/${jobId}/html.pdf`,
+                        jobId: jobId,
                         headers: requestData.headers || {}
                     })
                         .then((title) => {
