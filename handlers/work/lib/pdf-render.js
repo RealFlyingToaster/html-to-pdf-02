@@ -3,13 +3,15 @@ console.log('renderer initializing');
 const chromium = require('chrome-aws-lambda'),
     AWS = require('aws-sdk'),
     s3 = new AWS.S3(),
+    sqs = new AWS.SQS({ apiVersion: '2012-11-05' }),
+    sqsQueueUrl = process.env.SQS_QUEUE_OUT,
     memcheck = require('./memcheck');
 
 exports.pdf = async (url, context) => {
     let browser = null,
         page = null,
         except = null;
-
+        
     try {
         // one browser per request.
         console.log('pdf: 0');
@@ -85,7 +87,27 @@ exports.pdf = async (url, context) => {
 
         await s3.putObject(s3params).promise();
 
-        console.log('pdf: d');
+        console.log('pdf: d; q=' + sqsQueueUrl);
+
+        let sqsparams = {
+            MessageAttributes: {
+                "Job": {
+                    DataType: "String",
+                    StringValue: context.jobId
+                }
+            },
+            MessageBody: JSON.stringify({
+                status: 'complete',
+                bucket: context.bucketName,
+                key: context.key,
+                job: context.jobId
+            }),
+            QueueUrl: sqsQueueUrl
+        };
+
+        await sqs.sendMessage(sqsparams).promise();
+
+        console.log('pdf: e');
 
     } catch (ex) {
         console.error(ex);

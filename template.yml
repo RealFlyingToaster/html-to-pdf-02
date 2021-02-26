@@ -113,6 +113,8 @@ Resources:
       Timeout: 30
       MemorySize: 1024
       Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt SQSQueueOut.QueueName
         - S3WritePolicy:
             BucketName: !Ref BucketName
       Events:
@@ -128,23 +130,23 @@ Resources:
   SQSQueueOut:
     Type: AWS::SQS::Queue
 
-  # Allow ScratchBucket to send messages to SQSQueueOut
-  SQSQueueOutPolicy:
-    Type: AWS::SQS::QueuePolicy
-    Properties:
-      PolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          - Effect: Allow
-            Principal:
-              AWS: "*"
-            Action: SQS:SendMessage
-            Resource: "*"
-            Condition:
-              ArnLike:
-                aws:SourceArn: !Sub 'arn:aws:s3:*:*:${BucketName}'
-      Queues:
-        - !Ref SQSQueueOut
+  # # Allow ScratchBucket to send messages to SQSQueueOut
+  # SQSQueueOutPolicy:
+  #   Type: AWS::SQS::QueuePolicy
+  #   Properties:
+  #     PolicyDocument:
+  #       Version: "2012-10-17"
+  #       Statement:
+  #         - Effect: Allow
+  #           Principal:
+  #             AWS: "*"
+  #           Action: SQS:SendMessage
+  #           Resource: "*"
+  #           Condition:
+  #             ArnLike:
+  #               aws:SourceArn: !Sub 'arn:aws:s3:*:*:${BucketName}'
+  #     Queues:
+  #       - !Ref SQSQueueOut
 
   ScratchBucket:
     Type: AWS::S3::Bucket
@@ -156,10 +158,10 @@ Resources:
           Prefix: ''
           Status: 'Enabled'
           ExpirationInDays: '7'
-      NotificationConfiguration:
-        QueueConfigurations:
-          - Event: 's3:ObjectCreated:*'
-            Queue: !GetAtt SQSQueueOut.Arn       
+      # NotificationConfiguration:
+      #   QueueConfigurations:
+      #     - Event: 's3:ObjectCreated:*'
+      #       Queue: !GetAtt SQSQueueOut.Arn       
 
 Outputs:
   # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function

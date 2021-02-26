@@ -52,15 +52,16 @@ class Downloader extends EventEmitter {
     }
 
     async handleMessage(message) {
-        //console.log('Message: ' + JSON.stringify(message));
+        console.log('Message: ' + JSON.stringify(message));
         try {
-            let body = JSON.parse(message.Body);
-            body.Records.forEach(_.bind((record) => {
-                //console.log('Record: ' + JSON.stringify(record));
-                let bucket = record.s3.bucket.name,
-                    key = record.s3.object.key;
-                this.downloadOne(bucket, key);
-            }, this));
+            let body = JSON.parse(message.Body),
+                bucket = body.bucket,
+                key = body.key,
+                job = body.job;
+            await this.downloadOne(bucket, key);
+            // trigger event
+            this.emit(`complete.${job}`);
+            console.log(`complete.${job}`);
         } catch (ex) {
             console.error(ex.message);
             throw new Error('Error parsing message: ' + ex.message);
