@@ -1,0 +1,1 @@
+curl -X POST http://localhost:3020 -d @/home/efw/projects/html-to-pdf-02/scripts/testPayload.json --header "Content-Type: application/json"

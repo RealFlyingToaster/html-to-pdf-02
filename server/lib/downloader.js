@@ -5,7 +5,6 @@
 // 4) Download the file to /tmp
 // 5) Fire an event
 
-const { exception } = require('console');
 const EventEmitter = require('events'),
     AWS = require('aws-sdk'),
     { Consumer } = require('sqs-consumer'),
@@ -31,24 +30,33 @@ class Downloader extends EventEmitter {
         }
     }
 
+    eventName(jobId) {
+        return `complete.${jobId}`;
+    }
+
     async downloadOne(bucket, key) {
         console.log(`Downloading Bucket: ${bucket}; Key: ${key}`);
-        let params = { Key: key, Bucket: bucket };
+        let params = { Key: key, Bucket: bucket },
+            fileHandle,
+            filePath = this.localPath + '/' + key.replace(/\//g, '-'),
+            successPath = '';
         await s3.getObject(params).promise()
             .then(async (data) => {
-                let fileHandle,
-                    filePath = this.localPath + '/' + key.replace(/\//g, '-');
                 try {
                     fileHandle = await fsPromises.open(filePath, 'w');
                     await fileHandle.writeFile(data.Body);
                     console.info('...done');
+                    successPath = filePath; // only set when whole operation is successful
                 } finally {
                     if (fileHandle) {
                         await fileHandle.close();
                     }
                     this.clean();
                 }
+            }).catch((err) => {
+                console.error('Error in s3.getObject: ' + err);
             });
+        return successPath;
     }
 
     async handleMessage(message) {
@@ -57,11 +65,12 @@ class Downloader extends EventEmitter {
             let body = JSON.parse(message.Body),
                 bucket = body.bucket,
                 key = body.key,
-                job = body.job;
-            await this.downloadOne(bucket, key);
+                job = body.job,
+                eventName = this.eventName(job),
+                filePath = await this.downloadOne(bucket, key);
             // trigger event
-            this.emit(`complete.${job}`);
-            console.log(`complete.${job}`);
+            this.emit(eventName, { job: job, path: filePath });
+            console.log(eventName);
         } catch (ex) {
             console.error(ex.message);
             throw new Error('Error parsing message: ' + ex.message);
