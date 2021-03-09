@@ -64,16 +64,29 @@ exports.pdf = async (url, context) => {
         console.log('pdf: a3');
         const pdf = await page.pdf({
             fullPage: true,
-            format: 'Letter',
+            height: '50cm',
+            width: '38cm',            
             margin: {
-                top: '.5in',
-                bottom: '.5in',
-                right: '.5in',
-                left: '.5in'
+                top: '2cm',
+                bottom: '2cm',
+                right: '2cm',
+                left: '2cm'
             },
-            scale: 0.80, // .68 = 7.5" * 96dpi / 1056px natural width
+            scale: 1.25,
             printBackground: true
         });
+        // const pdf = await page.pdf({
+        //     fullPage: true,
+        //     format: 'Letter',
+        //     margin: {
+        //         top: '.5in',
+        //         bottom: '.5in',
+        //         right: '.5in',
+        //         left: '.5in'
+        //     },
+        //     scale: 0.80, // .68 = 7.5" * 96dpi / 1056px natural width
+        //     printBackground: true
+        // });
         console.log('pdf: b');
 
         const s3params = {
